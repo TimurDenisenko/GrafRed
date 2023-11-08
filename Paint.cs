@@ -1,3 +1,5 @@
+using Microsoft.VisualBasic;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Xml.Linq;
@@ -11,6 +13,7 @@ namespace GrafRed
         ToolStrip ts;
         ToolStripMenuItem tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout;
         ToolStripButton tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit;
+        PictureBox pb;
         public Paint()
         {
             this.Width = 1200;
@@ -25,6 +28,7 @@ namespace GrafRed
             tsHelp = new ToolStripMenuItem("Help");
             tsNew = new ToolStripMenuItem("New");
             tsNew.ShortcutKeys = Keys.Control | Keys.N;
+            tsNew.Click += TsNew_Click;
             tsOpen = new ToolStripMenuItem("Open");
             tsOpen.ShortcutKeys = Keys.F3;
             tsExit = new ToolStripMenuItem("Exit");
@@ -68,6 +72,8 @@ namespace GrafRed
             ts.Size = new Size(180, 180);
             ts.Dock = DockStyle.Left;
 
+            ts.Items.AddRange(new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit });
+
             foreach (ToolStripButton item in new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit })
             {
                 item.Image = Image.FromFile("../../../img/"+item.Text.ToLower()+".png");
@@ -75,9 +81,28 @@ namespace GrafRed
                 item.ImageScaling = ToolStripItemImageScaling.None;
             }
 
-            ts.Items.AddRange(new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit });
+            pb = new PictureBox();
+            pb.Size = new Size(1160,800);
+            pb.BackColor = Color.LightGray;
 
-            this.Controls.AddRange(new Control[] {MainMenu,ts});
+            this.Controls.AddRange(new Control[] {ts,MainMenu,pb});
+        }
+
+        private void TsNew_Click(object? sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNoCancel);
+            if (result == DialogResult.Yes)
+            {
+
+                Bitmap bmp = new Bitmap(pb.Image);
+                bmp.Save(@"..\..\Downloads", ImageFormat.Jpeg);
+                bmp.Dispose();
+            }
+            if (result!= DialogResult.Cancel)
+            {
+                pb.Image = null;
+                pb.Invalidate();
+            }
         }
     }
 }
