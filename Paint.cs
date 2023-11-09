@@ -1,8 +1,12 @@
 using Microsoft.VisualBasic;
+using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Windows.Forms;
 using System.Xml.Linq;
+
 
 namespace GrafRed
 {
@@ -10,11 +14,16 @@ namespace GrafRed
     {
         MenuStrip MainMenu;
         ToolStrip ts;
-        ToolStripMenuItem tsSaveAs,tsFormat,tsJpg,tsPng,tsGif,tsBmp,tsTiff,tsIcon,tsEmf,tsWmf;
+        ToolStripMenuItem tsSaveAs,tsFormat,tsJpg,tsPng,tsGif,tsBmp,tsTiff,tsIcon,tsEmf,tsWmf,tsJpeg,tsIco;
         ToolStripMenuItem tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout;
         ToolStripButton tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit;
         PictureBox pb;
+        OpenFileDialog ofd;
         DialogResult result;
+        string path = "../../Downloads/";
+        string nimi = "";
+        ToolStripMenuItem format;
+        FolderBrowserDialog fbd;
         public Paint()
         {
             this.Width = 1200;
@@ -27,23 +36,22 @@ namespace GrafRed
             tsFile = new ToolStripMenuItem("File");
             tsEdit = new ToolStripMenuItem("Edit");
             tsHelp = new ToolStripMenuItem("Help");
-            tsNew = new ToolStripMenuItem("New");
-            tsOpen = new ToolStripMenuItem("Open");
-            tsExit = new ToolStripMenuItem("Exit");
-            tsSave = new ToolStripMenuItem("Save");
+            tsNew = new ToolStripMenuItem("Uus");
+            tsOpen = new ToolStripMenuItem("Ava");
+            tsExit = new ToolStripMenuItem("Välju");
+            tsSave = new ToolStripMenuItem("Salvesta");
             tsUndo = new ToolStripMenuItem("Undo");
             tsRedo = new ToolStripMenuItem("Redo");
-            tsPen = new ToolStripMenuItem("Pen");
-            tsStyle = new ToolStripMenuItem("Style");
-            tsColor = new ToolStripMenuItem("Color");
+            tsPen = new ToolStripMenuItem("Pliiats");
+            tsStyle = new ToolStripMenuItem("Stiil");
+            tsColor = new ToolStripMenuItem("Värv");
             tsSolid = new ToolStripMenuItem("Solid");
             tsDot = new ToolStripMenuItem("Dot");
             tsDashDotDot = new ToolStripMenuItem("DashDotDot");
-            tsAbout = new ToolStripMenuItem("About");
+            tsAbout = new ToolStripMenuItem("Umbes");
 
-            tsSaveAs = new ToolStripMenuItem("Save as");
-            tsFormat = new ToolStripMenuItem("Format");
-            tsJpg = new ToolStripMenuItem("Jpg");
+            tsSaveAs = new ToolStripMenuItem("Salvesta nimega");
+            tsFormat = new ToolStripMenuItem("Formaat");
             tsPng = new ToolStripMenuItem("Png");
             tsGif = new ToolStripMenuItem("Gif");
             tsBmp = new ToolStripMenuItem("Bmp");
@@ -51,12 +59,13 @@ namespace GrafRed
             tsIcon = new ToolStripMenuItem("Icon");
             tsEmf = new ToolStripMenuItem("Emf");
             tsWmf = new ToolStripMenuItem("Wmf");
-
-            tsbNew = new ToolStripButton("New");
-            tsbOpen = new ToolStripButton("Open");
-            tsbSave = new ToolStripButton("Save");
-            tsbColor = new ToolStripButton("Color");
-            tsbExit = new ToolStripButton("Exit");
+            tsJpeg = new ToolStripMenuItem("Jpeg");
+            //удалить некоторые форматы
+            tsbNew = new ToolStripButton("Uus");
+            tsbOpen = new ToolStripButton("Ava");
+            tsbSave = new ToolStripButton("Salvesta");
+            tsbColor = new ToolStripButton("Värv");
+            tsbExit = new ToolStripButton("Välju");
 
             ts = new ToolStrip();
             ts.AutoSize = false;
@@ -85,20 +94,24 @@ namespace GrafRed
             tsEmf.CheckOnClick = true;
             tsWmf.CheckOnClick = true;
             tsJpg.Checked = true;
+            tsJpeg.CheckOnClick= true;
+            tsIco.CheckOnClick= true;
 
-            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] {tsJpg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf})
+            format = tsPng;
+
+            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] {tsJpg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsIco})
             {
                 item.Font = new Font("Arial", 9);
             }
             foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsSaveAs,tsFormat, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout })
             {
                 item.Font = new Font("Arial", 9);
-                try { item.Image = Image.FromFile("../../../img/"+item.Text.ToLower().Replace(" ","")+".png"); } catch (Exception) { }
+                try { item.Image = Image.FromFile("../../../img/"+item.Text.ToLower().Replace(" ","").Replace("ä","a")+".png"); } catch (Exception) { }
             }
 
             foreach (ToolStripButton item in new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit })
             {
-                item.Image = Image.FromFile("../../../img/" + item.Text.ToLower() + ".png");
+                item.Image = Image.FromFile("../../../img/" + item.Text.ToLower().Replace("ä", "a") + ".png");
                 item.DisplayStyle = ToolStripItemDisplayStyle.Image;
                 item.ImageScaling = ToolStripItemImageScaling.None;
             }
@@ -110,7 +123,7 @@ namespace GrafRed
             tsPen.DropDownItems.AddRange(new ToolStripMenuItem[] { tsStyle, tsColor });
             tsStyle.DropDownItems.AddRange(new ToolStripMenuItem[] { tsSolid, tsDot, tsDashDotDot });
             tsHelp.DropDownItems.Add(tsAbout);
-            tsFormat.DropDownItems.AddRange(new ToolStripMenuItem[] {tsJpg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf });
+            tsFormat.DropDownItems.AddRange(new ToolStripMenuItem[] {tsJpg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsIco });
             ts.Items.AddRange(new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit });
 
             tsNew.Click += TsNew_Click;
@@ -128,14 +141,65 @@ namespace GrafRed
             tsIcon.Click += Format_Click;
             tsEmf.Click += Format_Click;
             tsWmf.Click += Format_Click;
+            tsJpeg.Click += Format_Click;
+            tsIco.Click += Format_Click;
+            tsOpen.Click +=Open_Click;
+            tsbOpen.Click += Open_Click;
+            tsSaveAs.Click +=SaveAs_Click;
 
             pb = new PictureBox();
             pb.Size = new Size(1160,800);
             pb.BackColor = Color.LightGray;
 
+            ofd = new OpenFileDialog()
+            {
+                FileName = "Valige pildifail",
+                Title = "Avage pildifail",
+                Filter = "Image Files|*.jpg; *.jpeg; *.gif; *.bmp; *.png; *.tiff; *.icon; *.ico; *.emf; *.wmf"
+
+            };
+            fbd = new FolderBrowserDialog();
+            fbd.Description = "Valige faili salvestamise tee";
+
             this.Controls.AddRange(new Control[] {ts,MainMenu,pb});
         }
 
+        private void SaveAs_Click(object? sender, EventArgs e)
+        {
+            if (nimi=="")
+            {
+                nimi = Interaction.InputBox("Kirjutage failile nimi", "Faili nimi", "img");
+
+            }
+            if (nimi!="")
+            {
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    string path = fbd.SelectedPath;
+                    SaveFile();
+                }
+            }
+        }
+
+        private void Open_Click(object? sender, EventArgs e)
+        {
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    var filePath = ofd.FileName;
+                    using (Stream str = ofd.OpenFile())
+                    {
+                        pb.Image = new Bitmap(ofd.FileName);
+                    }
+                }
+                catch (SecurityException ex)
+                {
+                    MessageBox.Show($"Security error.\n\nError message: {ex.Message}\n\n" +
+                    $"Details:\n\n{ex.StackTrace}");
+                }
+            }
+        }
         private void Format_Click(object? sender, EventArgs e)
         {
             ToolStripMenuItem selected = (ToolStripMenuItem)sender;
@@ -149,6 +213,7 @@ namespace GrafRed
                 else
                 {
                     item.Checked = true;
+                    format = selected;
                 }
             }
         }
@@ -193,14 +258,27 @@ namespace GrafRed
         {
             try
             {
+                //передавать сюда метод
                 Bitmap bmp = new Bitmap(pb.Image);
-                bmp.Save("../../Downloads/img.jpg", ImageFormat.Jpeg);
+                bmp.Save(path+"img."+format.Text.ToLower(), ImageFormat.Jpeg);
                 bmp.Dispose();
+                MessageBox.Show("Fail on salvestatud", "Edu", MessageBoxButtons.OK);
             }
             catch (Exception)
             {
                 MessageBox.Show("Fail on tühi! Joonista midagi.", "Viga", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private ImageFormat ImgFormat()
+        {//дописать метод
+            //switch (format.Text.ToLower())
+            //{
+            //    case "jpeg":
+            //        return ImageFormat.Jpeg;
+            //    case "jpeg":
+            //        return ImageFormat.Jpeg;
+            //}
         }
     }
 }
