@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Windows.Forms;
@@ -16,15 +17,13 @@ namespace GrafRed
         MenuStrip MainMenu;
         ToolStripControlHost toolStripControlHost;
         ToolStrip ts;
-        ToolStripMenuItem tsSaveAs,tsFormat,tsPng,tsGif,tsBmp,tsTiff,tsIcon,tsEmf,tsWmf,tsJpeg;
-        ToolStripMenuItem tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout, tsSize;
+        ToolStripMenuItem format, tsSaveAs, tsFormat, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout, tsSize;
         ToolStripButton tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit;
         PictureBox pb, pb1;
         OpenFileDialog ofd;
         DialogResult result;
         string path = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
         string nimi = "";
-        ToolStripMenuItem format;
         FolderBrowserDialog fbd;
         Panel pl;
         Label lb;
@@ -121,16 +120,12 @@ namespace GrafRed
 
             format = tsPng;
 
-            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg })
-            {
-                item.Font = new Font("Arial", 9);
-            }
-            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsSaveAs, tsFormat, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout })
+            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsSaveAs, tsFormat, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout })
             {
                 item.Font = new Font("Arial", 9);
                 try { item.Image = Image.FromFile("../../../img/" + item.Text.ToLower().Replace(" ", "").Replace("ä", "a") + ".png"); } catch (Exception) { }
-            }
 
+            }
             foreach (ToolStripButton item in new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit })
             {
                 item.Image = Image.FromFile("../../../img/" + item.Text.ToLower().Replace("ä", "a") + ".png");
@@ -148,32 +143,6 @@ namespace GrafRed
             tsHelp.DropDownItems.Add(tsAbout);
             tsFormat.DropDownItems.AddRange(new ToolStripMenuItem[] { tsJpeg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf });
             ts.Items.AddRange(new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit });
-
-            tsNew.Click += TsNew_Click;
-            tsbNew.Click += TsNew_Click;
-            tsSolid.Click += Style_Click;
-            tsDot.Click += Style_Click;
-            tsDashDotDot.Click += Style_Click;
-            tsExit.Click += Exit_Click;
-            tsbExit.Click += Exit_Click;
-            tsPng.Click += Format_Click;
-            tsGif.Click += Format_Click;
-            tsBmp.Click += Format_Click;
-            tsTiff.Click += Format_Click;
-            tsIcon.Click += Format_Click;
-            tsEmf.Click += Format_Click;
-            tsWmf.Click += Format_Click;
-            tsJpeg.Click += Format_Click;
-            tsOpen.Click += Open_Click;
-            tsbOpen.Click += Open_Click;
-            tsSaveAs.Click += SaveAs_Click;
-            tsSave.Click += Save_Click;
-            tsbSave.Click += Save_Click;
-            tsColor.Click += TsColor_Click;
-            tsbColor.Click += TsColor_Click;
-            tsUndo.Click += TsUndo_Click;
-            tsRedo.Click += TsRedo_Click;
-            
 
             pb = new PictureBox();
             pb1 = new PictureBox();
@@ -229,7 +198,7 @@ namespace GrafRed
             
         }
 
-        private void TsRedo_Click(object? sender, EventArgs e)
+        private void Redo_Click(object? sender, EventArgs e)
         {
             if (historyC<history.Count - 1)
             {
@@ -239,7 +208,7 @@ namespace GrafRed
             else MessageBox.Show("Ajalugu on tühi");
         }
 
-        private void TsUndo_Click(object? sender, EventArgs e)
+        private void Undo_Click(object? sender, EventArgs e)
         {
             if (history.Count != 0 && historyC != 0)
             {
@@ -249,7 +218,7 @@ namespace GrafRed
             else MessageBox.Show("Ajalugu on tühi");
         }
 
-        private void TsColor_Click(object? sender, EventArgs e)
+        private void Color_Click(object? sender, EventArgs e)
         {
             if (cd.ShowDialog() == DialogResult.OK)
             {
@@ -472,7 +441,7 @@ namespace GrafRed
             }
         }
 
-        private void TsNew_Click(object? sender, EventArgs e)
+        private void New_Click(object? sender, EventArgs e)
         {
             if (pb.Image!=null)
             {
