@@ -14,9 +14,10 @@ namespace GrafRed
     public partial class Paint : Form
     {
         MenuStrip MainMenu;
+        ToolStripControlHost toolStripControlHost;
         ToolStrip ts;
         ToolStripMenuItem tsSaveAs,tsFormat,tsPng,tsGif,tsBmp,tsTiff,tsIcon,tsEmf,tsWmf,tsJpeg;
-        ToolStripMenuItem tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout;
+        ToolStripMenuItem tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout, tsSize;
         ToolStripButton tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit;
         PictureBox pb, pb1;
         OpenFileDialog ofd;
@@ -29,7 +30,14 @@ namespace GrafRed
         Label lb;
         TrackBar tb;
         int lbx, lby ,lbp;
-        private double zoom = 1.0;
+        bool drawing;
+        GraphicsPath currentPath;
+        Point oldLocation;
+        Pen currentPen;
+        ComboBox cb;
+        ColorDialog cd;
+        int historyC;
+        List<Image> history;
         public Paint()
         {
             this.Width = 1230;
@@ -37,7 +45,7 @@ namespace GrafRed
             this.Text = "Paint";
 
             MainMenu = new MenuStrip();
-            MainMenu.Location = new Point(0,0);
+            MainMenu.Location = new Point(0, 0);
 
             tsFile = new ToolStripMenuItem("File");
             tsEdit = new ToolStripMenuItem("Edit");
@@ -56,6 +64,16 @@ namespace GrafRed
             tsDashDotDot = new ToolStripMenuItem("DashDotDot");
             tsAbout = new ToolStripMenuItem("Umbes");
 
+            cb = new ComboBox();
+            cb.DropDownWidth = 5;
+            for (int i = 1; i < 101; i++)
+            {
+                cb.Items.Add(i);
+            }
+            cb.SelectedText = "Suurus";
+            toolStripControlHost = new ToolStripControlHost(cb);
+            cb.SelectionChangeCommitted += Cb_SelectionChangeCommitted;
+
             tsSaveAs = new ToolStripMenuItem("Salvesta nimega");
             tsFormat = new ToolStripMenuItem("Formaat");
             tsPng = new ToolStripMenuItem("Png");
@@ -66,7 +84,7 @@ namespace GrafRed
             tsEmf = new ToolStripMenuItem("Emf");
             tsWmf = new ToolStripMenuItem("Wmf");
             tsJpeg = new ToolStripMenuItem("Jpeg");
-            
+
             tsbNew = new ToolStripButton("Uus");
             tsbOpen = new ToolStripButton("Ava");
             tsbSave = new ToolStripButton("Salvesta");
@@ -99,18 +117,18 @@ namespace GrafRed
             tsIcon.CheckOnClick = true;
             tsEmf.CheckOnClick = true;
             tsWmf.CheckOnClick = true;
-            tsJpeg.CheckOnClick= true;
+            tsJpeg.CheckOnClick = true;
 
             format = tsPng;
 
-            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg})
+            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg })
             {
                 item.Font = new Font("Arial", 9);
             }
-            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsSaveAs,tsFormat, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout })
+            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsSaveAs, tsFormat, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout })
             {
                 item.Font = new Font("Arial", 9);
-                try { item.Image = Image.FromFile("../../../img/"+item.Text.ToLower().Replace(" ","").Replace("ä","a")+".png"); } catch (Exception) { }
+                try { item.Image = Image.FromFile("../../../img/" + item.Text.ToLower().Replace(" ", "").Replace("ä", "a") + ".png"); } catch (Exception) { }
             }
 
             foreach (ToolStripButton item in new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit })
@@ -124,10 +142,11 @@ namespace GrafRed
 
             tsEdit.DropDownItems.AddRange(new ToolStripMenuItem[] { tsUndo, tsRedo, tsPen });
             tsFile.DropDownItems.AddRange(new ToolStripMenuItem[] { tsNew, tsOpen, tsSave, tsSaveAs, tsFormat, tsExit });
+            tsPen.DropDownItems.Add(toolStripControlHost);
             tsPen.DropDownItems.AddRange(new ToolStripMenuItem[] { tsStyle, tsColor });
             tsStyle.DropDownItems.AddRange(new ToolStripMenuItem[] { tsSolid, tsDot, tsDashDotDot });
             tsHelp.DropDownItems.Add(tsAbout);
-            tsFormat.DropDownItems.AddRange(new ToolStripMenuItem[] {tsJpeg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf });
+            tsFormat.DropDownItems.AddRange(new ToolStripMenuItem[] { tsJpeg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf });
             ts.Items.AddRange(new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit });
 
             tsNew.Click += TsNew_Click;
@@ -145,15 +164,20 @@ namespace GrafRed
             tsEmf.Click += Format_Click;
             tsWmf.Click += Format_Click;
             tsJpeg.Click += Format_Click;
-            tsOpen.Click +=Open_Click;
+            tsOpen.Click += Open_Click;
             tsbOpen.Click += Open_Click;
-            tsSaveAs.Click +=SaveAs_Click;
+            tsSaveAs.Click += SaveAs_Click;
             tsSave.Click += Save_Click;
             tsbSave.Click += Save_Click;
+            tsColor.Click += TsColor_Click;
+            tsbColor.Click += TsColor_Click;
+            tsUndo.Click += TsUndo_Click;
+            tsRedo.Click += TsRedo_Click;
+            
 
             pb = new PictureBox();
             pb1 = new PictureBox();
-            pb.Size = new Size(1180,825);
+            pb.Size = new Size(1180, 825);
             pb1.Size = new Size(1180, 825);
             pb.Location = new Point(0, 0);
             pb.BackColor = Color.LightGray;
@@ -172,33 +196,123 @@ namespace GrafRed
             lb = new Label();
 
             pl.Size = new Size(pb.Width, 30);
-            pl.Location = new Point(pb.Left, pb.Bottom+20);
+            pl.Location = new Point(pb.Left, pb.Bottom + 20);
             pl.BackColor = Color.LightGray;
             pl.BorderStyle = BorderStyle.Fixed3D;
 
             tb = new TrackBar();
             tb.Size = new Size(250, 50);
-            tb.Location = new Point(pl.Width-tb.Width-35, 0);
+            tb.Location = new Point(pl.Width - tb.Width - 35, 0);
             tb.TickStyle = TickStyle.None;
             tb.Minimum = 1;
             tb.Maximum = 200;
             tb.Value = 100;
             tb.ValueChanged += Tb_ValueChanged;
             pb.MouseMove += Pb_MouseMove;
+            pb.MouseUp += Pb_MouseUp;
             lbp = tb.Value;
 
             lb.Location = new Point(ts.Right + 10, 5);
             lb.Text = ($"{lbx}, {lby}, {lbp}%");
 
-            pl.Controls.AddRange(new Control[] { lb,tb});
+            pl.Controls.AddRange(new Control[] { lb, tb });
+
+            drawing = false;
+            currentPen = new Pen(Color.Black);
+            currentPen.Width = 1;
+            pb.MouseDown += Pb_MouseDown;
+            cd = new ColorDialog();
+
+            history = new List<Image>();
+
             ControlsAdd(new Control[] { ts, MainMenu, pb, pl});
+            
+        }
+
+        private void TsRedo_Click(object? sender, EventArgs e)
+        {
+            if (historyC<history.Count - 1)
+            {
+                pb.Image = new Bitmap(history[++historyC]);
+                pb1.Image = pb.Image;
+            }
+            else MessageBox.Show("Ajalugu on tühi");
+        }
+
+        private void TsUndo_Click(object? sender, EventArgs e)
+        {
+            if (history.Count != 0 && historyC != 0)
+            {
+                pb.Image = new Bitmap(history[--historyC]);
+                pb1.Image = pb.Image;
+            }
+            else MessageBox.Show("Ajalugu on tühi");
+        }
+
+        private void TsColor_Click(object? sender, EventArgs e)
+        {
+            if (cd.ShowDialog() == DialogResult.OK)
+            {
+                currentPen.Color = cd.Color;
+            }
+        }
+
+        private void Cb_SelectionChangeCommitted(object? sender, EventArgs e)
+        {
+            currentPen.Width = int.Parse(cb.SelectedItem.ToString());
+        }
+
+        private void Pb_MouseUp(object? sender, MouseEventArgs e)
+        {
+            history.RemoveRange(historyC + 1, history.Count - historyC - 1);
+            history.Add(new Bitmap(pb.Image));
+            if (historyC + 1 < 10) historyC++;
+            if (history.Count - 1 == 10) history.RemoveAt(0);
+            drawing = false;
+            try
+            {
+                currentPath.Dispose();
+                pb1.Image = new Bitmap(pb.Image);
+            }
+            catch (Exception){  }
+        }
+
+        private void Pb_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (pb.Image == null)
+            {
+                MessageBox.Show("Esmalt looge fail");
+            }
+            if (e.Button == MouseButtons.Left)
+            {
+                drawing = true;
+                oldLocation = e.Location;
+                currentPath = new GraphicsPath();
+            }
         }
 
         private void Pb_MouseMove(object? sender, MouseEventArgs e)
         {
-            lbx = e.Location.X - ts.Right;
-            lby = e.Location.Y - ts.Top;
-            lb.Text = ($"{lbx}, {lby}, {lbp}%");
+            try
+            {
+                if (drawing)
+                {
+                    Graphics g = Graphics.FromImage(pb.Image);
+                    currentPath.AddLine(oldLocation, e.Location);
+                    g.DrawPath(currentPen, currentPath);
+                    oldLocation = e.Location;
+                    g.Dispose();
+                    pb.Invalidate();
+                }
+                lbx = e.Location.X - ts.Right;
+                lby = e.Location.Y - ts.Top;
+                lb.Text = ($"{lbx}, {lby}, {lbp}%");
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         private void Tb_ValueChanged(object? sender, EventArgs e)
@@ -266,21 +380,35 @@ namespace GrafRed
 
         private void Open_Click(object? sender, EventArgs e)
         {
-            path = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-            if (ofd.ShowDialog() == DialogResult.OK)
+            if (pb.Image != null)
             {
-                try
+                result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNoCancel);
+                if (result == DialogResult.Yes)
                 {
-                    var filePath = ofd.FileName;
-                    using (Stream str = ofd.OpenFile())
-                    {
-                        pb.Image = new Bitmap(ofd.FileName);
-                        pb1.Image = new Bitmap(ofd.FileName);
-                    }
+                    SaveFile();
                 }
-                catch (Exception)
+            }
+            if (result != null)
+            {
+                path = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                history.Clear();
+                historyC = 0;
+                if (ofd.ShowDialog() == DialogResult.OK)
                 {
-                    MessageBox.Show("Midagi on vale!", "Viga", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    try
+                    {
+                        var filePath = ofd.FileName;
+                        using (Stream str = ofd.OpenFile())
+                        {
+                            pb.Image = new Bitmap(ofd.FileName);
+                            pb1.Image = new Bitmap(ofd.FileName);
+                            history.Add(pb.Image);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        MessageBox.Show("Midagi on vale!", "Viga", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
@@ -304,6 +432,14 @@ namespace GrafRed
 
         private void Exit_Click(object? sender, EventArgs e)
         {
+            if (pb.Image != null)
+            {
+                result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNoCancel);
+                if (result == DialogResult.Yes)
+                {
+                    SaveFile();
+                }
+            }
             Close();
         }
 
@@ -322,20 +458,40 @@ namespace GrafRed
                     item.Checked = true;
                 }
             }
+            if (tsSolid.Checked)
+            {
+                currentPen.DashStyle = DashStyle.Solid;
+            }
+            if (tsDot.Checked)
+            {
+                currentPen.DashStyle = DashStyle.Dot;
+            }
+            if (tsDashDotDot.Checked)
+            {
+                currentPen.DashStyle = DashStyle.DashDotDot;
+            }
         }
 
         private void TsNew_Click(object? sender, EventArgs e)
         {
-            result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNoCancel);
-            if (result == DialogResult.Yes)
+            if (pb.Image!=null)
             {
-                SaveFile();
+                result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNo);
+                if (result == DialogResult.Yes)
+                {
+                    SaveFile();
+                }
+
             }
-            if (result!= DialogResult.Cancel)
+            if (result != DialogResult.Cancel)
             {
-                pb.Image = null;
+                pb.Image = Image.FromFile("../../../img/valge.png");
+                pb1.Image = Image.FromFile("../../../img/valge.png");
                 pb.Invalidate();
                 path = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                history.Clear();
+                historyC = 0;
+                history.Add(pb.Image);
             }
         }
 
