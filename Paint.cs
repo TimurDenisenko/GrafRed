@@ -18,7 +18,7 @@ namespace GrafRed
         MenuStrip MainMenu;
         ToolStripControlHost toolStripControlHost;
         ToolStrip ts;
-        ToolStripMenuItem format, tsSaveAs, tsFormat, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout;
+        ToolStripMenuItem tsevarv,tspen, tskumm, format, tsSaveAs, tsFormat, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout;
         ToolStripButton tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit;
         PictureBox pb, pb1, pb2,pb3;
         OpenFileDialog ofd;
@@ -65,6 +65,9 @@ namespace GrafRed
             tsDot = new ToolStripMenuItem("Dot");
             tsDashDotDot = new ToolStripMenuItem("DashDotDot");
             tsAbout = new ToolStripMenuItem("Umbes");
+            tskumm = new ToolStripMenuItem("Kustutuskumm");
+            tspen = new ToolStripMenuItem("Pen");
+            tsevarv = new ToolStripMenuItem("Eemalda värv");
 
             cb = new ComboBox();
             cb.DropDownWidth = 5;
@@ -116,7 +119,7 @@ namespace GrafRed
 
             format = tsPng;
 
-            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsSaveAs, tsFormat, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout })
+            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsevarv,tspen, tskumm, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsSaveAs, tsFormat, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout })
             {
                 item.Font = new Font("Arial", 9);
                 try { item.Image = Image.FromFile("../../../img/" + item.Text.ToLower().Replace(" ", "").Replace("ä", "a") + ".png"); } catch (Exception) { }
@@ -134,7 +137,7 @@ namespace GrafRed
             tsEdit.DropDownItems.AddRange(new ToolStripMenuItem[] { tsUndo, tsRedo, tsPen });
             tsFile.DropDownItems.AddRange(new ToolStripMenuItem[] { tsNew, tsOpen, tsSave, tsSaveAs, tsFormat, tsExit });
             tsPen.DropDownItems.Add(toolStripControlHost);
-            tsPen.DropDownItems.AddRange(new ToolStripMenuItem[] { tsStyle, tsColor });
+            tsPen.DropDownItems.AddRange(new ToolStripMenuItem[] { tsStyle, tsColor, tskumm,tspen, tsevarv });
             tsStyle.DropDownItems.AddRange(new ToolStripMenuItem[] { tsSolid, tsDot, tsDashDotDot });
             tsHelp.DropDownItems.Add(tsAbout);
             tsFormat.DropDownItems.AddRange(new ToolStripMenuItem[] { tsJpeg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf });
@@ -160,6 +163,10 @@ namespace GrafRed
             tsbColor.Click += Color_Click;
             tsUndo.Click += Undo_Click;
             tsRedo.Click += Redo_Click;
+            tskumm.Click +=Tskumm_Click;
+            tspen.Click+=TsPen_Click;
+            tsAbout.Click +=TsAbout_Click;
+            tsevarv.Click +=Tsevarv_Click;
 
             pb = new PictureBox();
             pb1 = new PictureBox();
@@ -178,7 +185,7 @@ namespace GrafRed
             {
                 FileName = "Valige pildifail",
                 Title = "Avage pildifail",
-                Filter = "Image Files|*.jpeg; *.gif; *.bmp; *.png; *.tiff; *.icon; *.emf; *.wmf"
+                Filter = "Image Files|*.jpeg; *.jpg; *.gif; *.bmp; *.png; *.tiff; *.icon; *.emf; *.wmf"
 
             };
             fbd = new FolderBrowserDialog();
@@ -219,6 +226,45 @@ namespace GrafRed
 
             ControlsAdd(new Control[] { ts, MainMenu, pl,pb2 });
         }
+
+        private void Tsevarv_Click(object? sender, EventArgs e)
+        {
+            Color color = new Color();
+            colors = new Colors();
+            colors.ShowDialog();
+            if (colors.result==DialogResult.OK)
+            {
+                color = colors.color;
+                Bitmap bmp = new Bitmap(pb.Image);
+                bmp.MakeTransparent(color);
+                pb.Image = bmp;
+                pb1.Image = pb.Image;
+            }
+
+        }
+
+        private void TsAbout_Click(object? sender, EventArgs e)
+        {
+            MessageBox.Show("siia tuleb infot");
+        }
+
+        private void TsPen_Click(object? sender, EventArgs e)
+        {
+            if (colors!=null)
+            {
+                currentPen.Color = colors.color;
+            }
+            else
+            {
+                currentPen.Color = Color.Black;
+            }
+        }
+
+        private void Tskumm_Click(object? sender, EventArgs e)
+        {
+            currentPen.Color = Color.FromArgb(255, 255, 254);
+        }
+
         private void Pb3_MouseMove(object? sender, MouseEventArgs e)
         {
             lbx = e.Location.X - ts.Right;
@@ -258,18 +304,24 @@ namespace GrafRed
         }
         private void Pb_MouseUp(object? sender, MouseEventArgs e)
         {
-            Dragging = false;
-            history.RemoveRange(historyC + 1, history.Count - historyC - 1);
-            history.Add(new Bitmap(pb.Image));
-            if (historyC + 1 < 10) historyC++;
-            if (history.Count - 1 == 10) history.RemoveAt(0);
-            drawing = false;
-            try
+            if (Dragging)
             {
-                if (currentPath!=null) currentPath.Dispose();
-                pb1.Image = new Bitmap(pb.Image);
+                Dragging = false;
             }
-            catch (Exception){  }
+            else
+            {
+                history.RemoveRange(historyC + 1, history.Count - historyC - 1);
+                history.Add(new Bitmap(pb.Image));
+                if (historyC + 1 < 10) historyC++;
+                if (history.Count - 1 == 10) history.RemoveAt(0);
+                drawing = false;
+                try
+                {
+                    if (currentPath!=null) currentPath.Dispose();
+                    pb1.Image = new Bitmap(pb.Image);
+                }
+                catch (Exception) { }
+            }
         }
         private void Pb_MouseDown(object? sender, MouseEventArgs e)
         {
@@ -470,6 +522,7 @@ namespace GrafRed
             try
             {
                 Bitmap bmp = new Bitmap(pb.Image);
+                bmp.MakeTransparent(Color.FromArgb(255, 255, 254));
                 bmp.Save(path+"\\" + nimi+"."+format.Text.ToLower(), ImgFormat());
                 MessageBox.Show("Fail on salvestatud", "Edu", MessageBoxButtons.OK);
             }
