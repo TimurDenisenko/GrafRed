@@ -5,7 +5,7 @@ namespace GrafRed
         [STAThread]
         public static void Main()
         {
-            Application.Run(new Colors());
+            Application.Run(new Paint());
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -17,9 +18,9 @@ namespace GrafRed
         MenuStrip MainMenu;
         ToolStripControlHost toolStripControlHost;
         ToolStrip ts;
-        ToolStripMenuItem format, tsSaveAs, tsFormat, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout, tsSize;
+        ToolStripMenuItem format, tsSaveAs, tsFormat, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg, tsFile, tsEdit, tsHelp, tsNew, tsOpen, tsSave, tsExit, tsUndo, tsRedo, tsPen, tsStyle, tsColor, tsSolid, tsDot, tsDashDotDot, tsAbout;
         ToolStripButton tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit;
-        PictureBox pb, pb1;
+        PictureBox pb, pb1, pb2,pb3;
         OpenFileDialog ofd;
         DialogResult result;
         string path = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
@@ -34,9 +35,12 @@ namespace GrafRed
         Point oldLocation;
         Pen currentPen;
         ComboBox cb;
-        ColorDialog cd;
         int historyC;
         List<Image> history;
+        Colors colors;
+        private bool Dragging;
+        private int xPos;
+        private int yPos;
         public Paint()
         {
             this.Width = 1230;
@@ -144,12 +148,45 @@ namespace GrafRed
             tsFormat.DropDownItems.AddRange(new ToolStripMenuItem[] { tsJpeg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf });
             ts.Items.AddRange(new ToolStripButton[] { tsbNew, tsbOpen, tsbSave, tsbColor, tsbExit });
 
+            tsNew.Click += New_Click;
+            tsbNew.Click += New_Click;
+            tsSolid.Click += Style_Click;
+            tsDot.Click += Style_Click;
+            tsDashDotDot.Click += Style_Click;
+            tsExit.Click += Exit_Click;
+            tsbExit.Click += Exit_Click;
+            tsPng.Click += Format_Click;
+            tsGif.Click += Format_Click;
+            tsBmp.Click += Format_Click;
+            tsTiff.Click += Format_Click;
+            tsIcon.Click += Format_Click;
+            tsEmf.Click += Format_Click;
+            tsWmf.Click += Format_Click;
+            tsJpeg.Click += Format_Click;
+            tsOpen.Click += Open_Click;
+            tsbOpen.Click += Open_Click;
+            tsSaveAs.Click += SaveAs_Click;
+            tsSave.Click += Save_Click;
+            tsbSave.Click += Save_Click;
+            tsColor.Click += Color_Click;
+            tsbColor.Click += Color_Click;
+            tsUndo.Click += Undo_Click;
+            tsRedo.Click += Redo_Click;
+
             pb = new PictureBox();
             pb1 = new PictureBox();
-            pb.Size = new Size(1180, 825);
-            pb1.Size = new Size(1180, 825);
-            pb.Location = new Point(0, 0);
-            pb.BackColor = Color.LightGray;
+            pb2 = new PictureBox();
+            pb3 = new PictureBox();
+            pb.Size = new Size(1220, 860);
+            pb1.Size = new Size(1220, 860);
+            pb2.Size = new Size(1220, 860);
+            pb3.Size = new Size(1220, 860);
+            pb2.Location = new Point(0, 0);
+            pb3.Location = new Point(0, 0);
+            pb2.Controls.Add(pb);
+            pb2.Controls.Add(pb3);
+            pb3.BackColor = Color.Transparent;
+
 
             ofd = new OpenFileDialog()
             {
@@ -165,7 +202,7 @@ namespace GrafRed
             lb = new Label();
 
             pl.Size = new Size(pb.Width, 30);
-            pl.Location = new Point(pb.Left, pb.Bottom + 20);
+            pl.Location = new Point(pb.Left, pb.Bottom);
             pl.BackColor = Color.LightGray;
             pl.BorderStyle = BorderStyle.Fixed3D;
 
@@ -179,6 +216,8 @@ namespace GrafRed
             tb.ValueChanged += Tb_ValueChanged;
             pb.MouseMove += Pb_MouseMove;
             pb.MouseUp += Pb_MouseUp;
+            pb.MouseDown += Pb_MouseDown;
+            pb3.MouseMove += Pb3_MouseMove;
             lbp = tb.Value;
 
             lb.Location = new Point(ts.Right + 10, 5);
@@ -189,13 +228,16 @@ namespace GrafRed
             drawing = false;
             currentPen = new Pen(Color.Black);
             currentPen.Width = 1;
-            pb.MouseDown += Pb_MouseDown;
-            cd = new ColorDialog();
 
             history = new List<Image>();
 
-            ControlsAdd(new Control[] { ts, MainMenu, pb, pl});
-            
+            ControlsAdd(new Control[] { ts, MainMenu, pl,pb2 });
+        }
+        private void Pb3_MouseMove(object? sender, MouseEventArgs e)
+        {
+            lbx = e.Location.X - ts.Right;
+            lby = e.Location.Y - ts.Top;
+            lb.Text = ($"{lbx}, {lby}, {lbp}%");
         }
 
         private void Redo_Click(object? sender, EventArgs e)
@@ -220,9 +262,11 @@ namespace GrafRed
 
         private void Color_Click(object? sender, EventArgs e)
         {
-            if (cd.ShowDialog() == DialogResult.OK)
+            colors = new Colors();
+            colors.ShowDialog();
+            if (colors.result==DialogResult.OK)
             {
-                currentPen.Color = cd.Color;
+                currentPen.Color = colors.color;
             }
         }
 
@@ -233,6 +277,7 @@ namespace GrafRed
 
         private void Pb_MouseUp(object? sender, MouseEventArgs e)
         {
+            Dragging = false;
             history.RemoveRange(historyC + 1, history.Count - historyC - 1);
             history.Add(new Bitmap(pb.Image));
             if (historyC + 1 < 10) historyC++;
@@ -240,7 +285,7 @@ namespace GrafRed
             drawing = false;
             try
             {
-                currentPath.Dispose();
+                if (currentPath!=null) currentPath.Dispose();
                 pb1.Image = new Bitmap(pb.Image);
             }
             catch (Exception){  }
@@ -248,6 +293,12 @@ namespace GrafRed
 
         private void Pb_MouseDown(object? sender, MouseEventArgs e)
         {
+            if (e.Button == MouseButtons.Middle)
+            {
+                Dragging = true;
+                xPos = e.X;
+                yPos = e.Y;
+            }
             if (pb.Image == null)
             {
                 MessageBox.Show("Esmalt looge fail");
@@ -264,7 +315,15 @@ namespace GrafRed
         {
             try
             {
-                if (drawing)
+                Control c = sender as Control;
+                if (Dragging && c != null)
+                {
+                    int newposLeft = e.X + c.Left - xPos;
+                    int newposTop = e.Y + c.Top - yPos;
+                    c.Top = newposTop;
+                    c.Left = newposLeft;
+                }
+                if (drawing && pb.Image != null)
                 {
                     Graphics g = Graphics.FromImage(pb.Image);
                     currentPath.AddLine(oldLocation, e.Location);
@@ -273,15 +332,8 @@ namespace GrafRed
                     g.Dispose();
                     pb.Invalidate();
                 }
-                lbx = e.Location.X - ts.Right;
-                lby = e.Location.Y - ts.Top;
-                lb.Text = ($"{lbx}, {lby}, {lbp}%");
             }
-            catch (Exception)
-            {
-
-                throw;
-            }
+            catch (Exception) { throw; }
         }
 
         private void Tb_ValueChanged(object? sender, EventArgs e)
@@ -359,6 +411,9 @@ namespace GrafRed
             }
             if (result != null)
             {
+                tb.Value = 100;
+                lbp = tb.Value;
+                lb.Text = ($"{lbx}, {lby}, {lbp}%");
                 path = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
                 history.Clear();
                 historyC = 0;
@@ -369,6 +424,7 @@ namespace GrafRed
                         var filePath = ofd.FileName;
                         using (Stream str = ofd.OpenFile())
                         {
+                            pb.SizeMode = PictureBoxSizeMode.AutoSize;
                             pb.Image = new Bitmap(ofd.FileName);
                             pb1.Image = new Bitmap(ofd.FileName);
                             history.Add(pb.Image);
@@ -380,6 +436,7 @@ namespace GrafRed
                     }
                 }
             }
+            pb.Size = new Size(1180, 800);
         }
         private void Format_Click(object? sender, EventArgs e)
         {
@@ -454,6 +511,10 @@ namespace GrafRed
             }
             if (result != DialogResult.Cancel)
             {
+                tb.Value = 100;
+                lbp = tb.Value;
+                lb.Text = ($"{lbx}, {lby}, {lbp}%");
+                pb.SizeMode = PictureBoxSizeMode.AutoSize;
                 pb.Image = Image.FromFile("../../../img/valge.png");
                 pb1.Image = Image.FromFile("../../../img/valge.png");
                 pb.Invalidate();
