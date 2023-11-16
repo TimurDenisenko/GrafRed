@@ -29,8 +29,6 @@ namespace GrafRed
         Panel pl;
         Label lb;
         TrackBar tb;
-        int lbx, lby ,lbp;
-        bool drawing;
         GraphicsPath currentPath;
         Point oldLocation;
         Pen currentPen;
@@ -38,14 +36,15 @@ namespace GrafRed
         int historyC;
         List<Image> history;
         Colors colors;
-        private bool Dragging;
-        private int xPos;
-        private int yPos;
+        private bool Dragging, drawing;
+        private int xPos, yPos, lbx, lby, lbp;
         public Paint()
         {
             this.Width = 1230;
             this.Height = 930;
-            this.Text = "Paint";
+            this.Text = "Paint"; 
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
 
             MainMenu = new MenuStrip();
             MainMenu.Location = new Point(0, 0);
@@ -108,19 +107,12 @@ namespace GrafRed
             tsSaveAs.ShortcutKeys = Keys.Control | Keys.F2;
             tsAbout.ShortcutKeys = Keys.F1;
 
-            tsDot.CheckOnClick = true;
-            tsDashDotDot.CheckOnClick = true;
-            tsSolid.CheckOnClick = true;
+            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsDot,tsDashDotDot, tsSolid, tsJpeg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf })
+            {
+                item.CheckOnClick = true;
+            }
             tsSolid.Checked = true;
-            tsPng.CheckOnClick = true;
             tsPng.Checked = true;
-            tsGif.CheckOnClick = true;
-            tsBmp.CheckOnClick = true;
-            tsTiff.CheckOnClick = true;
-            tsIcon.CheckOnClick = true;
-            tsEmf.CheckOnClick = true;
-            tsWmf.CheckOnClick = true;
-            tsJpeg.CheckOnClick = true;
 
             format = tsPng;
 
@@ -155,14 +147,10 @@ namespace GrafRed
             tsDashDotDot.Click += Style_Click;
             tsExit.Click += Exit_Click;
             tsbExit.Click += Exit_Click;
-            tsPng.Click += Format_Click;
-            tsGif.Click += Format_Click;
-            tsBmp.Click += Format_Click;
-            tsTiff.Click += Format_Click;
-            tsIcon.Click += Format_Click;
-            tsEmf.Click += Format_Click;
-            tsWmf.Click += Format_Click;
-            tsJpeg.Click += Format_Click;
+            foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsJpeg, tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf })
+            {
+                item.Click+= Format_Click;
+            }
             tsOpen.Click += Open_Click;
             tsbOpen.Click += Open_Click;
             tsSaveAs.Click += SaveAs_Click;
@@ -177,14 +165,12 @@ namespace GrafRed
             pb1 = new PictureBox();
             pb2 = new PictureBox();
             pb3 = new PictureBox();
-            pb.Size = new Size(1220, 860);
-            pb1.Size = new Size(1220, 860);
-            pb2.Size = new Size(1220, 860);
-            pb3.Size = new Size(1220, 860);
-            pb2.Location = new Point(0, 0);
-            pb3.Location = new Point(0, 0);
-            pb2.Controls.Add(pb);
-            pb2.Controls.Add(pb3);
+            foreach (PictureBox item in new PictureBox[] {pb,pb1,pb2,pb3 })
+            {
+                item.Size = new Size(1220, 860);
+                item.Location = new Point(0, 0);
+            }
+            pb2.Controls.AddRange(new PictureBox[] { pb, pb3 });
             pb3.BackColor = Color.Transparent;
 
 
@@ -239,7 +225,6 @@ namespace GrafRed
             lby = e.Location.Y - ts.Top;
             lb.Text = ($"{lbx}, {lby}, {lbp}%");
         }
-
         private void Redo_Click(object? sender, EventArgs e)
         {
             if (historyC<history.Count - 1)
@@ -249,7 +234,6 @@ namespace GrafRed
             }
             else MessageBox.Show("Ajalugu on tühi");
         }
-
         private void Undo_Click(object? sender, EventArgs e)
         {
             if (history.Count != 0 && historyC != 0)
@@ -259,7 +243,6 @@ namespace GrafRed
             }
             else MessageBox.Show("Ajalugu on tühi");
         }
-
         private void Color_Click(object? sender, EventArgs e)
         {
             colors = new Colors();
@@ -269,12 +252,10 @@ namespace GrafRed
                 currentPen.Color = colors.color;
             }
         }
-
         private void Cb_SelectionChangeCommitted(object? sender, EventArgs e)
         {
             currentPen.Width = int.Parse(cb.SelectedItem.ToString());
         }
-
         private void Pb_MouseUp(object? sender, MouseEventArgs e)
         {
             Dragging = false;
@@ -290,7 +271,6 @@ namespace GrafRed
             }
             catch (Exception){  }
         }
-
         private void Pb_MouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Middle)
@@ -310,12 +290,11 @@ namespace GrafRed
                 currentPath = new GraphicsPath();
             }
         }
-
         private void Pb_MouseMove(object? sender, MouseEventArgs e)
         {
             try
             {
-                lbx = (pb.Left + e.X) - ts.Right;
+                lbx = pb.Left + e.X - ts.Right;
                 lby = pb.Top+e.Y - ts.Top;
                 lb.Text = ($"{lbx}, {lby}, {lbp}%");
                 Control c = sender as Control;
@@ -338,7 +317,6 @@ namespace GrafRed
             }
             catch (Exception) { throw; }
         }
-
         private void Tb_ValueChanged(object? sender, EventArgs e)
         {
             if (pb.Image!=null)
@@ -349,7 +327,6 @@ namespace GrafRed
                 pb.Image = bmp;
             }
         }
-
         private void ControlsAdd([Optional] Control[] arrayVisibleTrue, [Optional] Control[] arrayVisibleFalse)
         {
             if (arrayVisibleTrue != null)
@@ -368,15 +345,11 @@ namespace GrafRed
                 }
             }
         }
-
         private void Save_Click(object? sender, EventArgs e)
         {
             try
             {
-                if (nimi == "")
-                {
-                    nimi = Interaction.InputBox("Kirjutage failile nimi", "Faili nimi", "img");
-                }
+                if (nimi == "") nimi = Interaction.InputBox("Kirjutage failile nimi", "Faili nimi", "img");
                 SaveFile();
             }
             catch (Exception)
@@ -384,7 +357,6 @@ namespace GrafRed
                 MessageBox.Show("Midagi on vale!", "Viga", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
         private void SaveAs_Click(object? sender, EventArgs e)
         {
             try
@@ -401,18 +373,14 @@ namespace GrafRed
                 MessageBox.Show("Midagi on vale!", "Viga", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
         private void Open_Click(object? sender, EventArgs e)
         {
             if (pb.Image != null)
             {
                 result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNoCancel);
-                if (result == DialogResult.Yes)
-                {
-                    SaveFile();
-                }
+                if (result == DialogResult.Yes) SaveFile(); 
             }
-            if (result != null)
+            if (result != DialogResult.Cancel)
             {
                 tb.Value = 100;
                 lbp = tb.Value;
@@ -439,18 +407,13 @@ namespace GrafRed
                     }
                 }
             }
-            pb.Size = new Size(1180, 800);
         }
         private void Format_Click(object? sender, EventArgs e)
         {
             ToolStripMenuItem selected = (ToolStripMenuItem)sender;
-
             foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsPng, tsGif, tsBmp, tsTiff, tsIcon, tsEmf, tsWmf, tsJpeg })
             {
-                if (item != selected)
-                {
-                    item.Checked = false;
-                }
+                if (item != selected) item.Checked = false;
                 else
                 {
                     item.Checked = true;
@@ -458,59 +421,34 @@ namespace GrafRed
                 }
             }
         }
-
         private void Exit_Click(object? sender, EventArgs e)
         {
             if (pb.Image != null)
             {
                 result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNoCancel);
-                if (result == DialogResult.Yes)
-                {
-                    SaveFile();
-                }
+                if (result == DialogResult.Yes) SaveFile(); 
             }
             Close();
         }
-
         private void Style_Click(object? sender, EventArgs e)
         {
             ToolStripMenuItem selected = (ToolStripMenuItem)sender;
 
             foreach (ToolStripMenuItem item in new ToolStripMenuItem[] { tsSolid, tsDot, tsDashDotDot })
             {
-                if (item != selected)
-                {
-                    item.Checked = false;
-                }
-                else
-                {
-                    item.Checked = true;
-                }
+                if (item != selected) item.Checked = false;
+                else item.Checked = true;
             }
-            if (tsSolid.Checked)
-            {
-                currentPen.DashStyle = DashStyle.Solid;
-            }
-            if (tsDot.Checked)
-            {
-                currentPen.DashStyle = DashStyle.Dot;
-            }
-            if (tsDashDotDot.Checked)
-            {
-                currentPen.DashStyle = DashStyle.DashDotDot;
-            }
+            if (tsSolid.Checked) currentPen.DashStyle = DashStyle.Solid;
+            if (tsDot.Checked) currentPen.DashStyle = DashStyle.Dot;
+            if (tsDashDotDot.Checked) currentPen.DashStyle = DashStyle.DashDotDot;
         }
-
         private void New_Click(object? sender, EventArgs e)
         {
             if (pb.Image!=null)
             {
                 result = MessageBox.Show("Kas soovite faili salvestada?", "Salvestada", MessageBoxButtons.YesNo);
-                if (result == DialogResult.Yes)
-                {
-                    SaveFile();
-                }
-
+                if (result == DialogResult.Yes) SaveFile();
             }
             if (result != DialogResult.Cancel)
             {
@@ -527,7 +465,6 @@ namespace GrafRed
                 history.Add(pb.Image);
             }
         }
-
         private void SaveFile()
         {
             try
@@ -540,31 +477,21 @@ namespace GrafRed
             {
                 MessageBox.Show("Midagi on vale!", "Viga", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-}
-
+        }
         private ImageFormat ImgFormat()
         {
-            switch (format.Text.ToLower())
+            return format.Text.ToLower() switch
             {
-                case "jpeg":
-                    return ImageFormat.Jpeg;
-                case "png":
-                    return ImageFormat.Png;
-                case "gif":
-                    return ImageFormat.Gif;
-                case "bmp":
-                    return ImageFormat.Bmp;
-                case "tiff":
-                    return ImageFormat.Tiff;
-                case "icon":
-                    return ImageFormat.Icon;
-                case "emf":
-                    return ImageFormat.Emf;
-                case "wmf":
-                    return ImageFormat.Wmf;
-                default: 
-                    return ImageFormat.Png;
-            }
+                "jpeg" => ImageFormat.Jpeg,
+                "png" => ImageFormat.Png,
+                "gif" => ImageFormat.Gif,
+                "bmp" => ImageFormat.Bmp,
+                "tiff" => ImageFormat.Tiff,
+                "icon" => ImageFormat.Icon,
+                "emf" => ImageFormat.Emf,
+                "wmf" => ImageFormat.Wmf,
+                _ => ImageFormat.Png
+            };
         }
     }
 }

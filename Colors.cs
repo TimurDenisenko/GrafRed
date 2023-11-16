@@ -24,7 +24,10 @@ namespace GrafRed
             this.Height = 200;
             this.Text = "Colors";
             this.BackColor = Color.LightGray;
-            
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+
             lbRed = new Label()
             {
                 Text = "Punane",
@@ -115,7 +118,6 @@ namespace GrafRed
                 sbGreen.Value = color.B;
                 pb.BackColor = Color.FromArgb(cd.Color.ToArgb());
             }
-
         }
 
         private void BtnCancel_Click(object? sender, EventArgs e)
