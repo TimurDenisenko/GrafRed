@@ -315,6 +315,9 @@ namespace GrafRed
         {
             try
             {
+                lbx = (pb.Left + e.X) - ts.Right;
+                lby = pb.Top+e.Y - ts.Top;
+                lb.Text = ($"{lbx}, {lby}, {lbp}%");
                 Control c = sender as Control;
                 if (Dragging && c != null)
                 {
